@@ -9,6 +9,23 @@ export function normalizeForMatch(s: string): string {
   return s.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+/** Digit sequences in a string, including dotted/comma-grouped ones such as versions
+ * ("29.0.0") and numbers ("1,000"). Leading zeros are dropped per part, so "01" and "1" (the
+ * same day written two ways) compare equal. */
+function extractFigures(s: string): string[] {
+  return (s.match(/\d+(?:[.,]\d+)*/g) ?? []).map((f) => f.replace(/\d+/g, (d) => String(Number(d))));
+}
+
+/** True when every figure in `text` (digit runs, versions, and the parts of a date) also
+ * appears in the already-normalized source. A date the model reformatted ("Oct 1" for "October
+ * 1st") still passes, because only its digits are compared. A figure only matches a whole figure
+ * in the source, so "29" is not found inside "2900". Purely deterministic: it checks figures,
+ * not meaning. */
+function figuresAppearInSource(text: string, normalizedSource: string): boolean {
+  const sourceFigures = new Set(extractFigures(normalizedSource));
+  return extractFigures(text).every((f) => sourceFigures.has(f));
+}
+
 /** The text of the placeholder that replaces a claim whose quote was not found in the source. */
 export const REMOVED_CLAIM_TEXT = 'A claim here could not be verified against the source advisory and was removed.';
 
@@ -34,7 +51,8 @@ export function isRemovedClaim(claim: Claim): boolean {
 /** What happened to one claim:
  *  - `verified`: it cites a quote, and that quote was found in the source.
  *  - `unknown`: the model marked it unknown and cites no quote, so there is nothing to check.
- *  - `rejected`: it cites a quote that was NOT found in the source, so it was removed.
+ *  - `rejected`: its quote was NOT found in the source, or its text states a figure (number,
+ *    version, date) that is not in the source, so it was removed.
  * `unknown` is counted separately and never as `verified`: a claim with no quote has not been
  * checked against anything. */
 type ClaimStatus = 'verified' | 'unknown' | 'rejected';
@@ -56,7 +74,11 @@ function checkClaim(claim: Claim, normalizedSource: string): CheckResult {
     return { claim, status: 'unknown' };
   }
   const normalizedQuote = normalizeForMatch(claim.quote!);
-  if (normalizedQuote.length > 0 && normalizedSource.includes(normalizedQuote)) {
+  if (
+    normalizedQuote.length > 0 &&
+    normalizedSource.includes(normalizedQuote) &&
+    figuresAppearInSource(claim.text, normalizedSource)
+  ) {
     return { claim, status: 'verified' };
   }
   return { claim: rejectedClaimPlaceholder(), status: 'rejected' };
@@ -81,7 +103,9 @@ function checkClaims(claims: Claim[], normalizedSource: string, tally: Tally): C
  * source, or it's dropped from the list entirely (dates don't need a placeholder the way
  * claims do -- a missing date is just absent, not a broken sentence).
  *
- * This checks that quotes exist in the source. It does not check that a claim's wording is
+ * A claim must also pass a figure check: every number, version and date part in its `text`
+ * must appear in the source, so a real quote cannot carry a wrong "29.0.1". This checks that
+ * quotes and figures exist in the source. It does not check that a claim's wording is
  * supported by its quote, and claims marked unknown are counted separately because they carry
  * nothing to check.
  */

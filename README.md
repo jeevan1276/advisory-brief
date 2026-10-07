@@ -27,12 +27,18 @@ detail. This tool adds a mechanical check against that, with deliberate limits:
   counted separately from verified claims (the brief shows, for example, "7/11 claims have a
   quote found in the source. 4 marked unknown").
 - Any date must itself appear in the source text, or it's dropped from the brief.
+- **Figures in a claim's `text` are checked too.** Every number, version string (`29.0.0`) and
+  date part in the plain-language `text` must appear in the source, or the whole claim is removed
+  and counted like a claim with a bad quote. Dates are compared by their digits only, so "Oct 1"
+  for "October 1st" passes and "Oct 2" does not.
 - `urgency.level` is a closed enum (`ACT_NOW` / `ACT_BEFORE_DEADLINE` / `MONITOR` /
   `NO_ACTION`), validated with zod, so the model can't invent a new severity label.
 
 **What this does not guarantee.** The check proves a quote exists in the source. It does not
 prove the plain-language `text` next to that quote is actually supported by it, so a claim can
-carry a real quote and still be a poor paraphrase. The `urgency.level` choice, the per-audience
+carry a real quote and still be a poor paraphrase. The figure check only compares digits: it
+cannot tell that a correct number is attached to the wrong thing, ignores spelled-out numbers
+("twenty-nine") and month names, and does not apply to claims marked unknown. The `urgency.level` choice, the per-audience
 YES/NO/UNCLEAR "affected" flags, and the `whatWeDontKnow` list are model judgments that are not
 checked against the source at all. Treat a brief as a faster way to read the advisory, not a
 substitute for reading it, and use the quotes to check anything you act on.

@@ -36,6 +36,56 @@ function minimalRawBrief(overrides: Partial<RawBrief> = {}): RawBrief {
   return { ...base, ...overrides };
 }
 
+describe('verifyBrief figure check', () => {
+  const withTeam = (text: string) =>
+    minimalRawBrief({ whatToTellYourTeam: [claim(text, 'fixes recently identified vulnerabilities')] });
+
+  it('removes and counts a claim whose text has a version not in the source', () => {
+    const v = verifyBrief(withTeam('Upgrade to stellar-core 29.0.1 now.'), SOURCE, null, 'test');
+    expect(isRemovedClaim(v.whatToTellYourTeam[0])).toBe(true);
+    expect(v.verification.rejectedClaims).toBe(1);
+  });
+
+  it('removes a claim whose text has a number not in the source', () => {
+    const v = verifyBrief(withTeam('Protocol 30 fixes the vulnerabilities.'), SOURCE, null, 'test');
+    expect(v.verification.rejectedClaims).toBe(1);
+  });
+
+  it('keeps a claim whose figures all appear in the source', () => {
+    const v = verifyBrief(withTeam('Upgrade to 29.0.0 before Protocol 29 goes live.'), SOURCE, null, 'test');
+    expect(isRemovedClaim(v.whatToTellYourTeam[0])).toBe(false);
+    expect(v.verification.rejectedClaims).toBe(0);
+  });
+
+  it('keeps a date the model reformatted when its digits are in the source', () => {
+    // The source says "October 1st 1700 UTC"; the model wrote "Oct 1" and "01 October".
+    for (const text of ['Mainnet vote is Oct 1 at 1700 UTC.', 'Mainnet vote is 01 October, 1700 UTC.']) {
+      const v = verifyBrief(withTeam(text), SOURCE, null, 'test');
+      expect(v.verification.rejectedClaims).toBe(0);
+    }
+  });
+
+  it('removes a reformatted date whose day is wrong', () => {
+    const v = verifyBrief(withTeam('Mainnet vote is Oct 2 at 1700 UTC.'), SOURCE, null, 'test');
+    expect(v.verification.rejectedClaims).toBe(1);
+  });
+
+  it('does not match a number inside a longer number', () => {
+    const v = verifyBrief(withTeam('The 170 validators must upgrade.'), SOURCE, null, 'test');
+    expect(v.verification.rejectedClaims).toBe(1);
+  });
+
+  it('does not check the text of a claim marked unknown', () => {
+    const v = verifyBrief(
+      minimalRawBrief({ whatToTellYourTeam: [claim('Maybe 12 nodes, unclear.', null, true)] }),
+      SOURCE,
+      null,
+      'test',
+    );
+    expect(v.verification.rejectedClaims).toBe(0);
+  });
+});
+
 describe('verifyBrief', () => {
   it('keeps a claim whose quote is a real substring of the source', () => {
     const result = verifyBrief(minimalRawBrief(), SOURCE, null, 'test');
