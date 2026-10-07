@@ -3,9 +3,10 @@
 Candidate issues, each written to be posted to GitHub as-is. Every entry states the current
 state at a specific commit, what to build, how to verify it, and what is out of scope.
 Complexity (Trivial / Medium / High) follows the tiers in [`CONTRIBUTING.md`](CONTRIBUTING.md).
-If you pick one up, comment on the issue first so two people don't build the same thing.
-Entries marked **Posted on GitHub** are open issues: comment there, not here. The rest are
-candidates that have not been posted yet.
+If you pick one up, follow "Picking up an issue" in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Entries marked **Posted on GitHub** name the issue, and the GitHub issue is the source of truth for its status:
+comment there, not here. This file keeps the original write-up and is not updated when an issue closes, and an
+issue opened some other way may not be listed here at all. The rest are candidates that have not been posted yet.
 
 Audited commit: `6e63cb2`
 
