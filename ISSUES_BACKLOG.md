@@ -17,6 +17,7 @@ test suite never does; it mocks the model and GitHub.
 
 ### 1. Build an evaluation harness that scores briefs against hand-written gold briefs
 **Complexity:** High
+**Posted on GitHub:** #17
 
 **Description**
 The only evidence that briefs are good is one live run that verified 10 of 10 quotes. That
@@ -211,6 +212,7 @@ Run the automated check, then complete the flow without a mouse.
 
 ### 7. Let quote matching ignore Markdown formatting characters
 **Complexity:** Medium
+**Posted on GitHub:** #18
 
 _Written against commit `3536451`; later commits may have moved things, so check the code first._
 
